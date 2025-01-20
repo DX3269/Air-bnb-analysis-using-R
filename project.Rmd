@@ -1,0 +1,254 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("ggplot2")
+install.packages("mice")
+install.packages("DataExplorer")
+install.packages("caTools")
+install.packages("caret")
+install.packages("ggplot2")
+
+
+library(mice)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(DataExplorer)
+library(caTools)
+library(caret)
+
+
+```
+
+
+```{r}
+
+df <- read.csv("Airbnb_Data.csv")
+head(df)
+
+
+```
+
+```{r}
+
+View(df)
+
+
+```
+
+```{r}
+
+str(df)
+
+```
+
+```{r}
+
+# also used for checking wrong df entry error
+summary(df)
+
+
+```
+
+```{r}
+
+missing_values <- colSums(is.na(df))
+print(missing_values)
+
+```
+
+```{r}
+
+duplicate_rows <- df[duplicated(df), ]
+duplicate_rows
+
+
+```
+
+```{r}
+
+num_cols <- sapply(df, is.numeric)
+
+df[, num_cols] <- lapply(df[, num_cols], function(x) replace(x, is.na(x), mean(x, na.rm = TRUE)))
+```
+
+```{r}
+
+cat_cols <- sapply(df, is.factor)
+
+df[, cat_cols] <- lapply(df[, cat_cols], function(x) {
+  levels <- unique(x)
+  mode <- levels[which.max(tabulate(match(x, levels)))]
+  replace(x, is.na(x), mode)
+})
+
+```
+
+```{r}
+
+write.csv(df, "modified_csv_file.csv", row.names = FALSE)
+
+```
+
+```{r}
+
+# Remove duplicate rows
+df <- unique(df)
+
+```
+
+
+#EDA
+
+
+```{r}
+install.Rtools(check = TRUE, check_r_update = TRUE, GUI = TRUE, ...)
+
+```
+
+```{r}
+
+install.packages("ggplot2", repos = "http://cran.us.r-project.org", version = "1.2")
+
+
+```
+
+
+```{r}
+
+plot_missing(df)
+
+```
+
+```{r Fig1, echo=TRUE, fig.height=10, fig.width=10}
+
+plot_histogram(df)
+
+```
+
+```{r}
+library(DataExplorer)
+plot_bar(df,ggtheme = theme_bw(),title="Univariate analysis of Catergorical column using barplot")
+
+```
+
+```{r Fig2, echo=TRUE, fig.height=10, fig.width=10}
+
+num_df <- df[sapply(df, is.numeric)]
+
+plot_correlation(num_df)
+
+```
+
+```{r Fig3, echo=TRUE, fig.height=10, fig.width=10}
+
+plot_boxplot(df,by="log_price")
+
+```
+
+
+```{r}
+
+plot_density(df)
+
+
+```
+
+```{r}
+library(ggplot2)
+scatter_plot <- ggplot(df, aes(x = log_price, y = review_scores_rating)) +
+  geom_point() +
+  labs(x = "log_price", y = "review_scores_rating", title = "Scatter Plot")
+
+scatter_plot
+
+```
+
+```{r}
+library(dplyr)
+correlation_matrix <- cor(select(df, number_of_reviews, review_scores_rating))
+print(correlation_matrix)
+
+```
+
+```{r}
+
+contingency_table <- table(df$log_price, df$id)
+print(contingency_table)
+
+```
+
+```{r}
+
+chi_square_test <- chisq.test(contingency_table)
+print(chi_square_test)
+
+```
+
+
+```{r}
+library(ggplot2)
+box_plot <- ggplot(df, aes(x = log_price, y = id)) +
+  geom_boxplot() +
+  labs(x = "log_price", y = "id", title = "Box Plot")
+
+print(box_plot)
+
+```
+
+```{r}
+
+
+t_test <- t.test(id ~ number_of_reviews, data = df)
+print(t_test)
+
+```
+
+#overall summary
+
+```{r}
+
+summary <- create_report(df)
+summary
+
+```
+
+```{r}
+
+set.seed(123)
+
+```
+
+#Spliting Training and Testing Sets
+
+```{r}
+library(caTools)
+
+split <- sample.split(df$quality, SplitRatio = 1)
+train_df <- subset(df, split == TRUE)
+test_df <- subset(df, split == FALSE)
+
+
+```
+
+```{r}
+
+lm_model <- lm(quality ~ ., data = train_df)
+
+
+```
+
+```{r}
+
+summary(lm_model)
+
+
+```
+
+
